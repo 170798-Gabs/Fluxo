@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle Financeiro</title>
+    <!-- Inclui o Tailwind CSS para estilização -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .table-cell-header {
+            padding: 0.5rem;
+            text-align: left;
+            font-weight: 600;
+            color: #1f2937;
+            background-color: #e5e7eb;
+            border-bottom: 2px solid #d1d5db;
+        }
+        .table-cell {
+            padding: 0.5rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .text-income {
+            color: #10b981;
+        }
+        .text-expense {
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <!-- Container principal do aplicativo -->
+    <div id="main-app" class="w-full max-w-2xl bg-white rounded-xl shadow-xl p-6 space-y-8">
+        <!-- Título do aplicativo -->
+        <h1 class="text-3xl font-bold text-center text-gray-800">Controle de Fluxo de Caixa</h1>
+        <div class="text-xs text-center text-gray-400 break-words flex items-center justify-center gap-2">
+            ID do Usuário: <span id="userIdDisplay" class="font-mono bg-gray-200 px-1 py-0.5 rounded-md">ID Anônimo</span>
+        </div>
+
+        <!-- Seção de Resumo Mensal -->
+        <div class="bg-gray-50 p-4 rounded-lg shadow-inner">
+            <h2 class="text-lg font-semibold text-gray-700 mb-4">Resumo por Mês</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white rounded-lg shadow-sm">
+                    <thead>
+                        <tr>
+                            <th class="table-cell-header">Mês</th>
+                            <th class="table-cell-header">Saldo Inicial</th>
+                            <th class="table-cell-header">Entradas</th>
+                            <th class="table-cell-header">Saídas Fixas</th>
+                            <th class="table-cell-header">Saídas Diárias</th>
+                            <th class="table-cell-header">Total Saídas</th>
+                            <th class="table-cell-header">Saldo Final</th>
+                        </tr>
+                    </thead>
+                    <tbody id="monthlySummaryTable">
+                        <!-- O resumo mensal será preenchido aqui via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="noSummaryMessage" class="text-center text-gray-400 mt-4 hidden">Nenhum dado financeiro encontrado.</div>
+        </div>
+
+        <!-- Formulário para adicionar nova transação -->
+        <div class="bg-gray-50 p-4 rounded-lg shadow-inner space-y-4">
+            <h2 class="text-lg font-semibold text-gray-700">Adicionar Transação</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Campo de data -->
+                <div>
+                    <label for="date" class="block text-sm font-medium text-gray-700">Data</label>
+                    <input type="date" id="date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2.5">
+                </div>
+                <!-- Campo de descrição -->
+                <div>
+                    <label for="description" class="block text-sm font-medium text-gray-700">Descrição</label>
+                    <input type="text" id="description" placeholder="Ex: Salário, Aluguel" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2.5">
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Campo de valor -->
+                <div>
+                    <label for="amount" class="block text-sm font-medium text-gray-700">Valor (R$)</label>
+                    <input type="number" id="amount" placeholder="Ex: 150.00" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2.5">
+                </div>
+                <!-- Seleção do tipo de transação -->
+                <div>
+                    <label for="type" class="block text-sm font-medium text-gray-700">Tipo</label>
+                    <select id="type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2.5 bg-white">
+                        <option value="income">Receita</option>
+                        <option value="fixedExpense">Saída Fixa</option>
+                        <option value="dailyExpense">Saída Diária</option>
+                    </select>
+                </div>
+            </div>
+            <!-- Botão para adicionar a transação -->
+            <button id="addTransactionBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition-colors shadow-lg">
+                Adicionar Transação
+            </button>
+        </div>
+
+        <!-- Seção de Orçamento Diário -->
+        <div class="bg-gray-50 p-4 rounded-lg shadow-inner space-y-4">
+            <h2 class="text-lg font-semibold text-gray-700">Orçamento Diário</h2>
+            <div class="flex flex-col md:flex-row items-center gap-4">
+                <div class="flex-1 w-full">
+                    <label for="dailyTotalBudget" class="block text-sm font-medium text-gray-700">Valor Total Disponível (R$)</label>
+                    <input type="number" id="dailyTotalBudget" placeholder="Ex: 500.00" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2.5">
+                </div>
+                <button id="saveDailyBudgetBtn" class="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-6 rounded-lg transition-colors shadow-lg mt-1 md:mt-0">
+                    Salvar Orçamento
+                </button>
+            </div>
+            <div id="dailyBudgetStatus" class="mt-4 text-center text-sm">
+                <!-- O status do orçamento diário será exibido aqui -->
+            </div>
+            <p id="dailyAmountDisplay" class="text-center text-xs text-gray-500 mt-2">
+                <!-- O valor diário será exibido aqui -->
+            </p>
+        </div>
+
+        <!-- Seção de Orçamento Mensal -->
+        <div class="bg-gray-50 p-4 rounded-lg shadow-inner space-y-4">
+            <h2 class="text-lg font-semibold text-gray-700">Orçamento Mensal (Total)</h2>
+            <div class="flex flex-col md:flex-row items-center gap-4">
+                <div class="flex-1 w-full">
+                    <label for="monthlyBudgetAmount" class="block text-sm font-medium text-gray-700">Valor Mensal (R$)</label>
+                    <input type="number" id="monthlyBudgetAmount" placeholder="Ex: 2000.00" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2.5">
+                </div>
+                <button id="saveMonthlyBudgetBtn" class="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-6 rounded-lg transition-colors shadow-lg mt-1 md:mt-0">
+                    Salvar Orçamento
+                </button>
+            </div>
+            <div id="monthlyBudgetStatus" class="mt-4 text-center text-sm">
+                <!-- O status do orçamento mensal será exibido aqui -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Pop-up para despesas a vencer -->
+    <div id="dueExpensesModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center hidden z-50 transition-opacity duration-300 ease-in-out">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-sm space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 class="text-xl font-bold text-gray-800">Despesas a Vencer Hoje!</h3>
+                <button id="closeModalBtn" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div id="dueExpensesList" class="space-y-2 max-h-60 overflow-y-auto">
+                <!-- Lista de despesas será renderizada aqui -->
+            </div>
+            <p id="noDueExpensesMessage" class="text-center text-gray-500 hidden">Nenhuma despesa a vencer hoje.</p>
+        </div>
+    </div>
+
+    <!-- Pop-up para o relatório mensal detalhado -->
+    <div id="detailsModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center hidden z-50 transition-opacity duration-300 ease-in-out">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-11/12 max-w-lg space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 class="text-xl font-bold text-gray-800">Relatório Detalhado de <span id="detailsModalMonth"></span></h3>
+                <button id="closeDetailsModalBtn" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div id="detailsList" class="space-y-3 max-h-80 overflow-y-auto">
+                <!-- A lista de transações detalhadas será renderizada aqui -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Container para mensagens de feedback -->
+    <div id="messageBox" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-sm py-2 px-4 rounded-lg shadow-xl hidden transition-opacity duration-300 ease-in-out opacity-0">
+        <!-- Mensagens serão exibidas aqui -->
+    </div>
+
+    <!-- Firebase SDKs e Lógica do App -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        let db, auth, userId;
+        let activeListener = null;
+
+        // Elementos da UI
+        const mainApp = document.getElementById('main-app');
+        const userIdDisplayEl = document.getElementById('userIdDisplay');
+        const dateInput = document.getElementById('date');
+        const descriptionInput = document.getElementById('description');
+        const amountInput = document.getElementById('amount');
+        const typeSelect = document.getElementById('type');
+        const addTransactionBtn = document.getElementById('addTransactionBtn');
+        const monthlySummaryTable = document.getElementById('monthlySummaryTable');
+        const noSummaryMessage = document.getElementById('noSummaryMessage');
+        const messageBoxEl = document.getElementById('messageBox');
+        const dailyTotalBudgetInput = document.getElementById('dailyTotalBudget');
+        const saveDailyBudgetBtn = document.getElementById('saveDailyBudgetBtn');
+        const dailyBudgetStatusEl = document.getElementById('dailyBudgetStatus');
+        const dailyAmountDisplay = document.getElementById('dailyAmountDisplay');
+        const monthlyBudgetAmountInput = document.getElementById('monthlyBudgetAmount');
+        const saveMonthlyBudgetBtn = document.getElementById('saveMonthlyBudgetBtn');
+        const monthlyBudgetStatusEl = document.getElementById('monthlyBudgetStatus');
+        const dueExpensesModal = document.getElementById('dueExpensesModal');
+        const dueExpensesList = document.getElementById('dueExpensesList');
+        const noDueExpensesMessage = document.getElementById('noDueExpensesMessage');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const detailsModal = document.getElementById('detailsModal');
+        const closeDetailsModalBtn = document.getElementById('closeDetailsModalBtn');
+        const detailsList = document.getElementById('detailsList');
+        const detailsModalMonth = document.getElementById('detailsModalMonth');
+
+        let allMonthsData = {};
+        
+        /**
+         * Exibe uma mensagem de feedback para o usuário.
+         * @param {string} message - A mensagem a ser exibida.
+         */
+        function showMessage(message) {
+            messageBoxEl.textContent = message;
+            messageBoxEl.classList.remove('hidden', 'opacity-0');
+            messageBoxEl.classList.add('opacity-100');
+            setTimeout(() => {
+                messageBoxEl.classList.remove('opacity-100');
+                messageBoxEl.classList.add('opacity-0');
+                setTimeout(() => {
+                    messageBoxEl.classList.add('hidden');
+                }, 300);
+            }, 3000);
+        }
+
+        /**
+         * Formata um número para o formato de moeda R$.
+         * @param {number} value - O valor a ser formatado.
+         * @returns {string} - O valor formatado.
+         */
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            }).format(value);
+        }
+
+        /**
+         * Obtém o ID do mês no formato 'AAAA-MM'.
+         * @param {Date} date - A data para formatar.
+         * @returns {string} - O ID do mês.
+         */
+        function getMonthId(date) {
+            const year = date.getFullYear();
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            return `${year}-${month}`;
+        }
+        
+        /**
+         * Calcula os dias restantes no mês a partir da data atual.
+         * @param {Date} date - A data atual.
+         * @returns {number} - Número de dias restantes.
+         */
+        function getRemainingDaysInMonth(date) {
+            const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+            const currentDay = date.getDate();
+            return lastDay - currentDay + 1;
+        }
+        
+        /**
+         * Exibe um modal com a lista de despesas a vencer.
+         * @param {Array} expenses - A lista de despesas.
+         */
+        function showDueExpensesModal(expenses) {
+            dueExpensesList.innerHTML = '';
+            if (expenses.length > 0) {
+                noDueExpensesMessage.classList.add('hidden');
+                expenses.forEach(exp => {
+                    const expenseEl = document.createElement('div');
+                    expenseEl.classList.add('flex', 'justify-between', 'items-center', 'py-2', 'px-3', 'rounded-lg', 'bg-red-50', 'text-sm', 'font-medium');
+                    expenseEl.innerHTML = `
+                        <span class="text-gray-800">${exp.description}</span>
+                        <span class="font-bold text-red-600">${formatCurrency(exp.amount)}</span>
+                    `;
+                    dueExpensesList.appendChild(expenseEl);
+                });
+            } else {
+                noDueExpensesMessage.classList.remove('hidden');
+            }
+            dueExpensesModal.classList.remove('hidden');
+            setTimeout(() => {
+                dueExpensesModal.classList.add('opacity-100');
+            }, 100);
+        }
+
+        /**
+         * Verifica se há despesas a vencer hoje e exibe um modal.
+         */
+        async function checkDueExpenses() {
+            if (!userId) return;
+            try {
+                // Obtém a data de hoje para comparação
+                const today = new Date();
+                const todayDay = today.getDate();
+                const todayMonth = today.getMonth();
+                const todayYear = today.getFullYear();
+                
+                const dueExpenses = [];
+                
+                // Pega todos os documentos de meses para verificar as transações
+                const monthsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/months`);
+                const querySnapshot = await getDocs(monthsCollectionRef);
+                
+                querySnapshot.forEach(doc => {
+                    const monthData = doc.data();
+                    const transactions = monthData.transactions || [];
+                    
+                    transactions.forEach(transaction => {
+                        const transactionDate = new Date(transaction.date);
+                        // Verifica se a transação é uma despesa e se a data corresponde ao dia e mês de hoje
+                        if ((transaction.type === 'fixedExpense' || transaction.type === 'dailyExpense') && 
+                            transactionDate.getDate() === todayDay && 
+                            transactionDate.getMonth() === todayMonth && 
+                            transactionDate.getFullYear() === todayYear) {
+                            dueExpenses.push(transaction);
+                        }
+                    });
+                });
+                
+                // Exibe o modal com as despesas encontradas
+                showDueExpensesModal(dueExpenses);
+
+            } catch(e) {
+                console.error("Erro ao verificar despesas a vencer:", e);
+            }
+        }
+        
+        /**
+         * Exibe um modal com as transações detalhadas para um mês específico.
+         * @param {string} monthId - O ID do mês (AAAA-MM).
+         */
+        function showMonthlyDetails(monthId) {
+            const monthData = allMonthsData[monthId];
+            if (!monthData) {
+                showMessage("Dados para este mês não encontrados.");
+                return;
+            }
+
+            const transactions = monthData.transactions || [];
+            detailsList.innerHTML = '';
+            detailsModalMonth.textContent = monthId;
+
+            // Ordena as transações por data
+            transactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            transactions.forEach(transaction => {
+                const transactionEl = document.createElement('div');
+                transactionEl.classList.add('flex', 'items-start', 'justify-between', 'p-3', 'rounded-lg', 'shadow-sm', 'bg-white');
+                transactionEl.classList.add(transaction.type === 'income' ? 'bg-green-50' : 'bg-red-50');
+
+                const transactionDate = new Date(transaction.date);
+                const day = transactionDate.getDate().toString().padStart(2, '0');
+                const month = (transactionDate.getMonth() + 1).toString().padStart(2, '0');
+                const formattedDate = `${day}/${month}`;
+                
+                const transactionType = transaction.type === 'income' ? 'Receita' : (transaction.type === 'fixedExpense' ? 'Saída Fixa' : 'Saída Diária');
+                const amountText = formatCurrency(transaction.amount);
+
+                transactionEl.innerHTML = `
+                    <div class="flex-1 space-y-1">
+                        <p class="text-xs font-medium text-gray-400">${formattedDate} - ${transactionType}</p>
+                        <p class="font-medium text-gray-800">${transaction.description}</p>
+                    </div>
+                    <p class="font-bold ml-4 ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}">
+                        ${amountText}
+                    </p>
+                `;
+                detailsList.appendChild(transactionEl);
+            });
+
+            detailsModal.classList.remove('hidden');
+        }
+
+
+        /**
+         * Inicializa o Firebase e o processo de autenticação.
+         */
+        async function initFirebase() {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        userIdDisplayEl.textContent = user.uid;
+                        mainApp.classList.remove('hidden');
+                        setupMonthlySummaryListener();
+                        checkDueExpenses();
+                    } else {
+                        signInAnonymously(auth);
+                    }
+                });
+
+                const today = new Date().toISOString().slice(0, 10);
+                dateInput.value = today;
+                
+                attachEventListeners();
+
+            } catch (error) {
+                console.error("Erro ao inicializar Firebase ou autenticar:", error);
+                showMessage("Erro ao carregar o aplicativo. Verifique a conexão.");
+            }
+        }
+        
+        /**
+         * Configura o listener para o resumo mensal.
+         */
+        function setupMonthlySummaryListener() {
+            if (activeListener) {
+                activeListener();
+            }
+            const monthsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/months`);
+            
+            activeListener = onSnapshot(monthsCollectionRef, async (snapshot) => {
+                const monthsData = {};
+                snapshot.forEach(doc => {
+                    monthsData[doc.id] = doc.data();
+                });
+                allMonthsData = monthsData;
+
+                const sortedMonthIds = Object.keys(monthsData).sort();
+                await updateAndRenderSummary(sortedMonthIds, monthsData);
+                updateBudgetStatus(monthsData);
+            }, (error) => {
+                console.error("Erro ao ouvir resumo mensal:", error);
+                showMessage("Erro ao carregar os dados financeiros.");
+            });
+        }
+
+        /**
+         * Recalcula os saldos mensais em cascata e atualiza a UI.
+         * @param {string[]} sortedMonthIds - IDs dos meses ordenados.
+         * @param {Object} monthsData - Dados de cada mês.
+         */
+        async function updateAndRenderSummary(sortedMonthIds, monthsData) {
+            if (sortedMonthIds.length === 0) {
+                monthlySummaryTable.innerHTML = '';
+                noSummaryMessage.classList.remove('hidden');
+                return;
+            }
+
+            noSummaryMessage.classList.add('hidden');
+            monthlySummaryTable.innerHTML = '';
+            
+            let previousFinalBalance = 0;
+
+            for (const monthId of sortedMonthIds) {
+                const monthRef = doc(db, `artifacts/${appId}/users/${userId}/months`, monthId);
+                const monthData = monthsData[monthId];
+                
+                const totalIncome = monthData.totalIncome || 0;
+                const totalFixedExpense = monthData.totalFixedExpense || 0;
+                const totalDailyExpense = monthData.totalDailyExpense || 0;
+                const totalExpenses = totalFixedExpense + totalDailyExpense;
+                
+                const newInitialBalance = previousFinalBalance;
+                const newFinalBalance = newInitialBalance + totalIncome - totalExpenses;
+                
+                const updates = {};
+                if (newInitialBalance !== monthData.initialBalance) {
+                    updates.initialBalance = newInitialBalance;
+                }
+                if (newFinalBalance !== monthData.finalBalance) {
+                    updates.finalBalance = newFinalBalance;
+                }
+                if (Object.keys(updates).length > 0) {
+                    setDoc(monthRef, updates, { merge: true }).catch(e => console.error("Erro ao atualizar saldos:", e));
+                }
+
+                const row = monthlySummaryTable.insertRow();
+                row.dataset.monthId = monthId;
+                row.classList.add('cursor-pointer', 'hover:bg-gray-200', 'transition-colors');
+                row.innerHTML = `
+                    <td class="table-cell">${monthId}</td>
+                    <td class="table-cell text-gray-700">${formatCurrency(newInitialBalance)}</td>
+                    <td class="table-cell text-income">${formatCurrency(totalIncome)}</td>
+                    <td class="table-cell text-expense">${formatCurrency(totalFixedExpense)}</td>
+                    <td class="table-cell text-expense">${formatCurrency(totalDailyExpense)}</td>
+                    <td class="table-cell text-expense">${formatCurrency(totalExpenses)}</td>
+                    <td class="table-cell font-bold ${newFinalBalance >= 0 ? 'text-income' : 'text-expense'}">${formatCurrency(newFinalBalance)}</td>
+                `;
+
+                previousFinalBalance = newFinalBalance;
+            }
+        }
+        
+        /**
+         * Atualiza os status dos orçamentos diário e mensal.
+         * @param {Object} monthsData - Dados de cada mês.
+         */
+        function updateBudgetStatus(monthsData) {
+            const today = new Date();
+            const currentMonthId = getMonthId(today);
+            const currentMonthData = monthsData[currentMonthId] || {};
+
+            const totalRealizadoMensal = (currentMonthData.totalFixedExpense || 0) + (currentMonthData.totalDailyExpense || 0);
+            const orcadoMensal = currentMonthData.monthlyBudget || 0;
+            monthlyBudgetAmountInput.value = orcadoMensal;
+            let monthlyStatusText = `Realizado: ${formatCurrency(totalRealizadoMensal)}`;
+            if (orcadoMensal > 0) {
+                const diff = orcadoMensal - totalRealizadoMensal;
+                if (diff > 0) {
+                    monthlyStatusText += ` <span class="text-green-600">(${formatCurrency(diff)} abaixo do orçamento)</span>`;
+                } else if (diff < 0) {
+                    monthlyStatusText += ` <span class="text-red-600">(${formatCurrency(Math.abs(diff))} acima do orçamento)</span>`;
+                } else {
+                    monthlyStatusText += ` (Orçamento atingido)`;
+                }
+            }
+            monthlyBudgetStatusEl.innerHTML = monthlyStatusText;
+            
+            const dailyTotalBudget = currentMonthData.dailyTotalBudget || 0;
+            const totalDailyExpense = currentMonthData.totalDailyExpense || 0;
+            dailyTotalBudgetInput.value = dailyTotalBudget;
+            
+            const remainingBalance = dailyTotalBudget - totalDailyExpense;
+            const todayDate = new Date();
+            const remainingDays = getRemainingDaysInMonth(todayDate);
+            const dailyBudget = remainingDays > 0 ? remainingBalance / remainingDays : 0;
+
+            let dailyStatusText = `Saldo Disponível: <span class="${remainingBalance >= 0 ? 'text-green-600' : 'text-red-600'} font-semibold">${formatCurrency(remainingBalance)}</span>`;
+            if (remainingBalance < 0) {
+                 dailyStatusText += `<br>Você gastou ${formatCurrency(Math.abs(remainingBalance))} a mais do que o seu orçamento diário.`;
+            }
+
+            dailyBudgetStatusEl.innerHTML = dailyStatusText;
+
+            if (dailyTotalBudget > 0 && dailyBudget > 0) {
+                dailyAmountDisplay.textContent = `Você pode gastar ${formatCurrency(dailyBudget)} diariamente para manter o ritmo.`;
+            } else {
+                dailyAmountDisplay.textContent = '';
+            }
+        }
+
+        /**
+         * Adiciona uma nova transação ao Firestore e atualiza o resumo mensal.
+         */
+        async function addTransaction() {
+            const dateStr = dateInput.value;
+            const description = descriptionInput.value.trim();
+            const amount = parseFloat(amountInput.value);
+            const type = typeSelect.value;
+
+            if (!dateStr || !description || isNaN(amount) || amount <= 0) {
+                showMessage("Por favor, preencha todos os campos corretamente.");
+                return;
+            }
+
+            const transactionDate = new Date(dateStr + 'T12:00:00');
+            const monthId = getMonthId(transactionDate);
+
+            try {
+                const monthDocRef = doc(db, `artifacts/${appId}/users/${userId}/months`, monthId);
+                const monthDoc = await getDoc(monthDocRef);
+
+                let currentData = monthDoc.exists() ? monthDoc.data() : {
+                    totalIncome: 0,
+                    totalFixedExpense: 0,
+                    totalDailyExpense: 0,
+                    transactions: [],
+                    dailyExpenses: {}
+                };
+                
+                if (!currentData.transactions) {
+                    currentData.transactions = [];
+                }
+
+                currentData.transactions.push({
+                    description: description,
+                    amount: amount,
+                    type: type,
+                    date: transactionDate.toISOString()
+                });
+
+                if (type === 'income') {
+                    currentData.totalIncome = (currentData.totalIncome || 0) + amount;
+                } else if (type === 'fixedExpense') {
+                    currentData.totalFixedExpense = (currentData.totalFixedExpense || 0) + amount;
+                } else if (type === 'dailyExpense') {
+                    currentData.totalDailyExpense = (currentData.totalDailyExpense || 0) + amount;
+                    if (!currentData.dailyExpenses) {
+                        currentData.dailyExpenses = {};
+                    }
+                    const dayKey = dateStr;
+                    currentData.dailyExpenses[dayKey] = (currentData.dailyExpenses[dayKey] || 0) + amount;
+                }
+
+                await setDoc(monthDocRef, currentData);
+                
+                descriptionInput.value = '';
+                amountInput.value = '';
+                showMessage("Transação adicionada com sucesso!");
+
+            } catch (e) {
+                console.error("Erro ao adicionar transação: ", e);
+                showMessage("Erro ao adicionar a transação. Tente novamente.");
+            }
+        }
+        
+        /**
+         * Salva o valor total do orçamento diário e calcula o valor diário.
+         */
+        async function saveDailyBudget() {
+            const dailyTotalBudget = parseFloat(dailyTotalBudgetInput.value);
+            if (isNaN(dailyTotalBudget) || dailyTotalBudget < 0) {
+                showMessage("Por favor, insira um valor total diário válido.");
+                return;
+            }
+
+            const today = new Date();
+            const currentMonthId = getMonthId(today);
+            const remainingDays = getRemainingDaysInMonth(today);
+            
+            const monthDocRef = doc(db, `artifacts/${appId}/users/${userId}/months`, currentMonthId);
+
+            try {
+                const monthDoc = await getDoc(monthDocRef);
+                const currentData = monthDoc.exists() ? monthDoc.data() : {};
+                const totalDailyExpense = currentData.totalDailyExpense || 0;
+
+                const remainingBalance = dailyTotalBudget - totalDailyExpense;
+                const dailyBudget = remainingDays > 0 ? remainingBalance / remainingDays : 0;
+
+
+                await setDoc(monthDocRef, { dailyTotalBudget: dailyTotalBudget, dailyBudget: dailyBudget }, { merge: true });
+                showMessage("Orçamento diário salvo com sucesso!");
+            } catch (e) {
+                console.error("Erro ao salvar orçamento diário:", e);
+                showMessage("Erro ao salvar o orçamento diário.");
+            }
+        }
+        
+        /**
+         * Salva o valor do orçamento mensal para o mês atual.
+         */
+        async function saveMonthlyBudget() {
+            const budget = parseFloat(monthlyBudgetAmountInput.value);
+            if (isNaN(budget) || budget < 0) {
+                showMessage("Por favor, insira um valor de orçamento mensal válido.");
+                return;
+            }
+
+            const currentMonthId = getMonthId(new Date());
+            const monthDocRef = doc(db, `artifacts/${appId}/users/${userId}/months`, currentMonthId);
+
+            try {
+                await setDoc(monthDocRef, { monthlyBudget: budget }, { merge: true });
+                showMessage("Orçamento mensal salvo com sucesso!");
+            } catch (e) {
+                console.error("Erro ao salvar orçamento mensal:", e);
+                showMessage("Erro ao salvar o orçamento mensal.");
+            }
+        }
+        
+
+        // Adiciona os event listeners aos botões
+        function attachEventListeners() {
+            addTransactionBtn.addEventListener('click', addTransaction);
+            saveDailyBudgetBtn.addEventListener('click', saveDailyBudget);
+            saveMonthlyBudgetBtn.addEventListener('click', saveMonthlyBudget);
+            closeModalBtn.addEventListener('click', () => {
+                dueExpensesModal.classList.add('hidden');
+            });
+            closeDetailsModalBtn.addEventListener('click', () => {
+                detailsModal.classList.add('hidden');
+            });
+            
+            monthlySummaryTable.addEventListener('click', (event) => {
+                const row = event.target.closest('tr');
+                if (row && row.dataset.monthId) {
+                    showMonthlyDetails(row.dataset.monthId);
+                }
+            });
+        }
+
+
+        // Inicia o aplicativo quando a página estiver totalmente carregada
+        window.onload = initFirebase;
+    </script>
+</body>
+</html>
